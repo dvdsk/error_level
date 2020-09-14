@@ -8,3 +8,6 @@ edition = "2018"
 
 [dependencies]
 log = "0.4"
+
+[dev-dependencies]
+simplelog = "0.8.0"
