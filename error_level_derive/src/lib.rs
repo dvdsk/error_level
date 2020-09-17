@@ -13,7 +13,7 @@ pub fn log_level_derive(input: TokenStream) -> TokenStream {
 }
 
 #[derive(Debug)]
-enum Level {
+enum LevelVariant {
     No,
     Trace,
     Debug,
@@ -22,29 +22,39 @@ enum Level {
     Error,
 }
 
+#[derive(Debug)]
+enum Level {
+    Parsed(LevelVariant),
+    Error(proc_macro2::Span),
+}
+
 impl Level {
     fn from_ident(id: &syn::Ident) -> Self {
         match id.to_string().as_str() {
-            "No" => Self::No,
-            "Trace" => Self::Trace,
-            "Debug" => Self::Debug,
-            "Info" => Self::Info,
-            "Warn" => Self::Warn,
-            "Error" => Self::Error,
-            _ => panic!("options are only: No, Trace, Debug, Info, Warn or Error"),
+            "no" => Self::Parsed(LevelVariant::No),
+            "trace" => Self::Parsed(LevelVariant::Trace),
+            "debug" => Self::Parsed(LevelVariant::Debug),
+            "info" => Self::Parsed(LevelVariant::Info),
+            "warn" => Self::Parsed(LevelVariant::Warn),
+            "error" => Self::Parsed(LevelVariant::Error),
+            _ => Self::Error(id.span()),
         }
+
     }
 }
 
 impl quote::ToTokens for Level {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         let token = match self {
-            Self::No => quote! {None},
-            Self::Trace => quote! {Some(log::Level::Trace)},
-            Self::Debug => quote! {Some(log::Level::Debug)},
-            Self::Info => quote! {Some(log::Level::Info)},
-            Self::Warn => quote! {Some(log::Level::Warn)},
-            Self::Error => quote! {Some(log::Level::Error)},
+            Self::Parsed(LevelVariant::No) => quote! {None},
+            Self::Parsed(LevelVariant::Trace) => quote! {Some(log::Level::Trace)},
+            Self::Parsed(LevelVariant::Debug) => quote! {Some(log::Level::Debug)},
+            Self::Parsed(LevelVariant::Info) => quote! {Some(log::Level::Info)},
+            Self::Parsed(LevelVariant::Warn) => quote! {Some(log::Level::Warn)},
+            Self::Parsed(LevelVariant::Error) => quote! {Some(log::Level::Error)},
+            Self::Error(span) => { let span = span.clone();
+                quote_spanned! {span=> compile_error!("invalid report level, use: no, trace, debug, info, warn or error")
+            }},
         };
         tokens.extend(token);
     }

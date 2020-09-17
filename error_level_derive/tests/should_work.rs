@@ -5,7 +5,7 @@ use simplelog::{LevelFilter, Config, SimpleLogger};
 #[allow(dead_code)]
 #[derive(Debug, ErrorLevel)]
 pub enum OuterError {
-    #[report(Info)]
+    #[report(info)]
     Error0,
     // Error1,
 }
@@ -16,7 +16,7 @@ pub mod example_mod {
 
     #[derive(Debug, ErrorLevel)]
     pub enum Error {
-        #[report(Info)]
+        #[report(info)]
         Error00,
     }
 }
@@ -25,11 +25,11 @@ pub mod example_mod {
 fn simple() {
     #[derive(Debug, ErrorLevel)]
     pub enum CustomError {
-        #[report(Warn)]
+        #[report(warn)]
         ErrorA,
-        #[report(Info)]
+        #[report(info)]
         ErrorB,
-        #[report(No)]
+        #[report(no)]
         ErrorC,
         ErrorD(OuterError),
     }
@@ -52,11 +52,11 @@ fn simple() {
 fn with_path_seperator() {
     #[derive(Debug, ErrorLevel)]
     pub enum CustomError {
-        #[report(Warn)]
+        #[report(warn)]
         ErrorA,
-        #[report(Info)]
+        #[report(info)]
         ErrorB,
-        #[report(No)]
+        #[report(no)]
         ErrorC,
         ErrorD(example_mod::Error),
     }

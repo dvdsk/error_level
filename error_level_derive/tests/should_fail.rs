@@ -8,15 +8,13 @@ enum ErrorWithoutImpl {
 
 #[test]
 fn does_not_implement_ErrorLevel() {
-    
-
     #[derive(Debug, ErrorLevel)]
     pub enum CustomError {
-        #[level(Warn)]
+        #[report(warn)]
         ErrorA,
-        #[level(Info)]
+        #[report(info)]
         ErrorB,
-        #[level(No)]
+        #[report(no)]
         ErrorC,
         ErrorD(ErrorWithoutImpl),
     }
@@ -29,9 +27,9 @@ fn does_not_implement_ErrorLevel() {
 fn missing_attributes() {
     #[derive(Debug, ErrorLevel)]
     pub enum CustomError {
-        #[level(Warn)]
+        #[report(warn)]
         ErrorA,
-        #[level(Info)]
+        #[report(info)]
         ErrorB,
         ErrorC,
         ErrorD((String, String)),
