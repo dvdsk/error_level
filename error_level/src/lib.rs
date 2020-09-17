@@ -12,6 +12,9 @@ pub trait ErrorLevel : std::fmt::Debug {
     }
 }
 
+//re-export derive macro
+pub use error_level_derive::ErrorLevel;
+
 #[cfg(test)]
 mod test {
     use super::*;

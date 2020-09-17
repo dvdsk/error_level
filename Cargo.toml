@@ -1,13 +1,5 @@
-[package]
-name = "error_level"
-version = "0.1.0"
-authors = ["dskleingeld <11743287+dskleingeld@users.noreply.github.com>"]
-edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-log = "0.4"
-
-[dev-dependencies]
-simplelog = "0.8.0"
+[workspace]
+members = [
+	"error_level",
+	"error_level_derive",
+]

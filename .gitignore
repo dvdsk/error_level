@@ -1,2 +1,4 @@
-/target
-Cargo.lock
+error_level_derive/target
+error_level_derive/Cargo.lock
+error_level/target
+error_level/Cargo.lock
