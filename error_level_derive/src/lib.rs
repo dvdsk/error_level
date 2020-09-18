@@ -96,7 +96,7 @@ fn with_log_level(v: &Variant) -> Option<Level> {
 }
 
 #[derive(Debug)]
-struct WithInnError {
+struct UnMarked {
     inner_span: proc_macro2::Span,
     variant_id: syn::Ident,
 }
@@ -127,13 +127,6 @@ fn is_valid_inner(ty: &syn::Type) -> Result<proc_macro2::Span, proc_macro2::Span
 }
 
 fn has_inner(v: &Variant) -> Option<&syn::Type> { 
-    for a in &v.attrs {
-        let m = a.parse_meta().unwrap();
-        if let syn::Meta::List(list) = m { 
-            if has_level_path(&list){return None;}
-        }
-    }
-
     if let Fields::Unnamed(syn::FieldsUnnamed {ref unnamed, ..}) = v.fields {
         let ty = &unnamed.first()?.ty;
         Some(ty)
@@ -142,22 +135,33 @@ fn has_inner(v: &Variant) -> Option<&syn::Type> {
     }
 }
 
-fn extract_variants(variants: &Punctuated<Variant, Comma>) -> (Vec<Marked>, Vec<WithInnError>, Vec<proc_macro2::TokenStream>) {
-    let mut marked = Vec::new();
-    let mut w_inner = Vec::new();
+fn extract_variants(variants: &Punctuated<Variant, Comma>)
+    -> (Vec<Marked>, Vec<Marked>, Vec<UnMarked>, Vec<proc_macro2::TokenStream>) {
+
+    let mut marked_no_inn = Vec::new();
+    let mut marked_w_inn = Vec::new();
+    let mut unmarked_no_inn = Vec::new();
     let mut errs = Vec::new();
     for v in variants {
         if let Some(level) = with_log_level(v){
-            let variant_id = v.ident.clone();
-            marked.push(Marked {
-                level,
-                variant_id
-            });
+            if let Some(_) = has_inner(v){
+                let variant_id = v.ident.clone();
+                marked_w_inn.push(Marked {
+                    level,
+                    variant_id
+                });
+            } else { 
+                let variant_id = v.ident.clone();
+                marked_no_inn.push(Marked {
+                    level,
+                    variant_id
+                });
+            }
         } else if let Some(inner) = has_inner(v){
             match is_valid_inner(inner) {
                 Ok(inner_span) => {    
                     let variant_id = v.ident.clone();
-                    w_inner.push(WithInnError {
+                    unmarked_no_inn.push(UnMarked {
                         inner_span,
                         variant_id
                     });
@@ -176,22 +180,36 @@ fn extract_variants(variants: &Punctuated<Variant, Comma>) -> (Vec<Marked>, Vec<
             })
         }
     }
-    (marked, w_inner, errs)
+    (marked_no_inn, marked_w_inn, unmarked_no_inn, errs)
 }
 
 fn impl_error_level_macro(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let data = &ast.data;
     let variants = &unwrap_enum(data).variants;
-    let (marked, w_inner, errs) = extract_variants(variants);
+    let (marked, marked_w_inn, unmarked, errs) = extract_variants(variants);
 
-    //save list of variants with a level attribute
-    let level_with_attr = marked.iter().map(|m| &m.level);
-    let ident_with_attr = marked.iter().map(|m| &m.variant_id);
+    let marked_no_inn = marked.iter().map(|m| {
+        let level = &m.level;
+        let variant = &m.variant_id;
+        let span = m.variant_id.span();
+        quote_spanned! {
+            span =>
+            #name::#variant => #level,
+        }
+    });
+    
+    let marked_w_inn = marked_w_inn.iter().map(|m| {
+        let level = &m.level;
+        let variant = &m.variant_id;
+        let span = m.variant_id.span();
+        quote_spanned! {
+            span =>
+            #name::#variant(_) => #level,
+        }
+    });
 
-    //for idents without attr call the error_level function
-    //if error_level is undefined for that type the user will
-    let spanned = w_inner.iter().map(|m| {
+    let unmarked = unmarked.iter().map(|m| {
         let ident = &m.variant_id;
         let span = m.inner_span;
         quote_spanned! {
@@ -203,11 +221,12 @@ fn impl_error_level_macro(ast: &syn::DeriveInput) -> TokenStream {
     let gen = quote! {
         impl ErrorLevel for #name {
             fn error_level(&self) -> Option<log::Level> {
-                #(#errs)*;
                 match self {
-                    #(#name::#ident_with_attr => #level_with_attr,)*
-                    #(#spanned)*
+                    #(#marked_no_inn)*
+                    #(#marked_w_inn)*
+                    #(#unmarked)*
                 }
+                #(#errs)*
             }
         }
     };

@@ -15,5 +15,6 @@ quote = "1.0"
 proc-macro2 = "1.0"
 
 [dev-dependencies]
+thiserror = "1"
 simplelog = "0.8.0"
 error_level = { version = "0.1", path = "../error_level" }

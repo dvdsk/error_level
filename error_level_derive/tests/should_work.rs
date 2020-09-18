@@ -73,4 +73,26 @@ fn with_path_seperator() {
     b.log_error();
 }
 
+#[test]
+fn with_inner_attribute() {
+
+    #[derive(thiserror::Error, Debug, ErrorLevel)]
+    pub enum InnerE {
+        #[report(no)]
+        #[error("by")]
+        Error,
+    };
+
+    const CONSTANT_STR: &str = "test string";
+    #[derive(thiserror::Error, Debug, ErrorLevel)]
+    pub enum CustomError {
+        #[report(no)]
+        #[error("hi, {}", CONSTANT_STR)]
+        ErrorD(#[from] InnerE),
+    }
+
+    let d = CustomError::from(InnerE::Error);
+
+    assert_eq!(d.error_level(), None);
+}
 
