@@ -96,3 +96,25 @@ fn with_inner_attribute() {
     assert_eq!(d.error_level(), None);
 }
 
+#[test]
+fn with_multiple_inner_attribute() {
+
+    #[derive(Debug, ErrorLevel)]
+    pub enum InnerE {
+        #[report(warn)]
+        Error,
+    };
+
+    #[derive(Debug, ErrorLevel)]
+    pub enum CustomError {
+        #[report(no)]
+        ErrorD(String, String),
+        ErrorE(InnerE, String),
+    }
+
+    let d = CustomError::ErrorD("hi".into(), "by".into());
+    let e = CustomError::ErrorE(InnerE::Error, "by".into());
+
+    assert_eq!(d.error_level(), None);
+    assert_eq!(e.error_level(), Some(Level::Warn));
+}

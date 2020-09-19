@@ -66,6 +66,12 @@ struct Marked {
     variant_id: syn::Ident,
 }
 
+#[derive(Debug)]
+struct MarkedInner {
+    level: Level,
+    variant_id: syn::Ident,
+}
+
 fn has_level_path(m: &syn::MetaList) -> bool {
     if let Some(ident) = m.path.get_ident() {
         ident == "report"
@@ -136,7 +142,7 @@ fn has_inner(v: &Variant) -> Option<&syn::Type> {
 }
 
 fn extract_variants(variants: &Punctuated<Variant, Comma>)
-    -> (Vec<Marked>, Vec<Marked>, Vec<UnMarked>, Vec<proc_macro2::TokenStream>) {
+    -> (Vec<Marked>, Vec<MarkedInner>, Vec<UnMarked>, Vec<proc_macro2::TokenStream>) {
 
     let mut marked_no_inn = Vec::new();
     let mut marked_w_inn = Vec::new();
@@ -146,9 +152,9 @@ fn extract_variants(variants: &Punctuated<Variant, Comma>)
         if let Some(level) = with_log_level(v){
             if let Some(_) = has_inner(v){
                 let variant_id = v.ident.clone();
-                marked_w_inn.push(Marked {
+                marked_w_inn.push(MarkedInner {
                     level,
-                    variant_id
+                    variant_id,
                 });
             } else { 
                 let variant_id = v.ident.clone();
@@ -163,7 +169,7 @@ fn extract_variants(variants: &Punctuated<Variant, Comma>)
                     let variant_id = v.ident.clone();
                     unmarked_no_inn.push(UnMarked {
                         inner_span,
-                        variant_id
+                        variant_id,
                     });
                 },
                 Err(span) => {
@@ -205,7 +211,7 @@ fn impl_error_level_macro(ast: &syn::DeriveInput) -> TokenStream {
         let span = m.variant_id.span();
         quote_spanned! {
             span =>
-            #name::#variant(_) => #level,
+            #name::#variant(..) => #level,
         }
     });
 
@@ -214,7 +220,7 @@ fn impl_error_level_macro(ast: &syn::DeriveInput) -> TokenStream {
         let span = m.inner_span;
         quote_spanned! {
             span =>
-            #name::#ident(inn_err) => inn_err.error_level(),
+            #name::#ident(inn_err, ..) => inn_err.error_level(),
         }
     });
 
